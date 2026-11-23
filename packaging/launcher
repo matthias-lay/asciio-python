@@ -1,0 +1,24 @@
+#!/usr/bin/python3
+"""Installed entry points using the selected distro Python and its dependencies."""
+
+import sys
+from pathlib import Path
+
+sys.dont_write_bytecode = True
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from asciio.cli import dispatch  # noqa: E402
+
+commands = {
+    "asciio-python": [],
+    "asciio": ["gui"],
+    "tasciio": ["tui"],
+    "asciio-to-text": ["render"],
+    "asciio_to_text": ["render"],
+    "text-to-asciio": ["import-text"],
+    "text_to_asciio": ["import-text"],
+}
+name = Path(sys.argv[0]).name
+if name not in commands:
+    raise SystemExit(f"Unknown launcher name: {name}")
+dispatch([*commands[name], *sys.argv[1:]])

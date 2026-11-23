@@ -85,6 +85,26 @@ def test_joined_emoji_uses_its_display_width_not_codepoint_count():
     assert diagram.bounds() == (0, 0, width(text) + 1, 1)
 
 
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("\U0001f469\u200d\U0001f4bb", 2),
+        ("\U0001f44d\U0001f3fd", 2),
+        ("\u2764\ufe0f", 2),
+        ("1\ufe0f\u20e3", 2),
+        ("\U0001f1eb\U0001f1f7", 2),
+        ("\U0001f1eb", 2),
+        ("e\u0301", 1),
+        ("\u754c", 2),
+    ],
+)
+def test_grapheme_widths_work_with_stable_distro_wcwidth(text, expected):
+    diagram = Diagram([Element(kind="text", text=text + "X")])
+    assert width(text) == expected
+    assert diagram.bounds() == (0, 0, expected + 1, 1)
+    assert diagram.render() == text + "X\n"
+
+
 def test_transparent_text_and_negative_coordinate_export():
     background = Element(kind="text", x=-2, y=-1, text="ABCDE\nFGHIJ")
     foreground = Element(kind="text", x=-1, y=0, text=" x ", transparent=True)

@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -109,7 +110,7 @@ def test_cli_import_edit_render_and_errors(tmp_path):
 
 
 def test_real_console_converters_and_python_scripting(tmp_path):
-    interpreter_dir = Path(sys.executable).parent
+    interpreter_dir = Path(os.environ.get("PASCIIO_BIN_DIR", Path(sys.executable).parent))
     path = tmp_path / "converted.pasciio"
     result = subprocess.run(
         [str(interpreter_dir / "text_to_asciio"), "-o", str(path)],

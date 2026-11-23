@@ -9,7 +9,7 @@ description = "An ASCII and Unicode diagram editor with GTK and terminal interfa
 readme = "README.md"
 requires-python = ">=3.11"
 license = {text = "GPL-3.0-or-later"}
-dependencies = ["wcwidth>=0.9.5"]
+dependencies = ["wcwidth>=0.2.5", "regex>=2022.10.31"]
 
 [project.optional-dependencies]
 gui = ["PyGObject>=3.42", "pycairo>=1.20"]
@@ -40,4 +40,8 @@ files = ["src/asciio"]
 
 [[tool.mypy.overrides]]
 module = ["gi", "gi.*", "cairo"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["regex"]
 ignore_missing_imports = true

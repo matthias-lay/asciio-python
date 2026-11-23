@@ -11,31 +11,120 @@ Native diagrams and reusable stencils use **`.pasciio`**, not `.asciio`.
 
 ## Install
 
-Python 3.11 or newer:
+### Distro packages, without a virtual environment (recommended)
+
+Use the distribution's Python **3.11 or newer**, its packaged dependencies, and
+the source installer below. No `pip`, virtual environment, setuptools, compiler,
+or `--break-system-packages` is needed. The application itself is not yet
+published as a Debian/RPM/Arch repository package; these commands install its
+**dependencies**, not Asciio Python.
+
+**Debian 12/13 and Ubuntu 24.04 or newer:**
 
 ```sh
-python3 -m venv .venv
+sudo apt-get install make python3 python3-wcwidth python3-regex
+# Optional GTK3 GUI and PNG export:
+sudo apt-get install python3-gi python3-gi-cairo python3-cairo \
+  gir1.2-gtk-3.0 gir1.2-pango-1.0
+```
+
+Ubuntu 22.04's default Python 3.10 is too old for this application.
+
+**Fedora (currently supported releases):**
+
+```sh
+sudo dnf install make python3 python3-wcwidth python3-regex
+# Optional GTK3 GUI and PNG export:
+sudo dnf install python3-gobject python3-cairo gtk3
+```
+
+**Arch Linux:**
+
+```sh
+sudo pacman -S --needed make python python-wcwidth python-regex
+# Optional GTK3 GUI and PNG export:
+sudo pacman -S --needed python-gobject python-cairo gtk3
+```
+
+**openSUSE Leap 16 / Tumbleweed, using Python 3.13:**
+
+```sh
+sudo zypper install make python313 python313-curses python313-wcwidth python313-regex
+# Optional GTK3 GUI and PNG export:
+sudo zypper install python313-gobject python313-gobject-Gdk \
+  python313-gobject-cairo python313-cairo \
+  typelib-1_0-Gtk-3_0 typelib-1_0-Pango-1_0
+```
+
+Python packages and interpreter versions must match; for this openSUSE example,
+pass `PYTHON=/usr/bin/python3.13` to `make`. On rolling distributions, use the
+equivalent complete package set for an available Python version if 3.13 has
+been retired. GTK **3**, not GTK4, is required.
+
+From the project checkout, install for your user:
+
+```sh
+make install PREFIX="$HOME/.local"
+export PATH="$HOME/.local/bin:$PATH"
+tasciio
+asciio     # if the optional GTK dependencies are installed
+```
+
+For the openSUSE example:
+
+```sh
+make install PREFIX="$HOME/.local" PYTHON=/usr/bin/python3.13
+```
+
+The installer puts application code in `$PREFIX/share/asciio-python` and
+launchers in `$PREFIX/bin`. Launchers use `/usr/bin/python3` by default, ignoring
+unrelated Python installations earlier on `PATH`. They load this application's
+code and the selected interpreter's distro packages, without writing into
+system `site-packages`. An existing unrelated `asciio` or other command in the
+destination is not overwritten; choose another prefix in that case.
+
+For a machine-wide source installation, use
+`sudo make install PREFIX=/usr/local`, adding `PYTHON=...` when needed.
+`DESTDIR` supports staging for downstream packaging. Upgrade by repeating the
+same installation command; uninstall using
+`make uninstall PREFIX="$HOME/.local"` or
+`sudo make uninstall PREFIX=/usr/local`, matching your installation prefix.
+
+`regex` provides grapheme segmentation on stable distros; `wcwidth` 0.2.5 or
+newer is sufficient. Emoji widths are normalized across the older and newer
+`wcwidth` releases. Other Unicode character widths depend on the packaged
+Unicode tables and terminal font.
+
+To run directly from a checkout without installing the application:
+
+```sh
+PYTHONPATH="$PWD/src" /usr/bin/python3 -m asciio tui
+PYTHONPATH="$PWD/src" /usr/bin/python3 -m asciio gui
+```
+
+Use `/usr/bin/python3.13` instead for the openSUSE example.
+
+Package-name references: [PyGObject's distro installation guide](https://pygobject.gnome.org/getting_started.html)
+(this application uses GTK3 instead of its GTK4 example),
+[Debian wcwidth](https://packages.debian.org/trixie/python3-wcwidth),
+[Fedora regex](https://packages.fedoraproject.org/pkgs/python-regex/python3-regex/),
+and [Arch Python packages](https://archlinux.org/packages/extra/x86_64/python-regex/).
+Ubuntu 24.04 distro versions are also exercised by the native-package CI job.
+
+### Optional pip/development installation
+
+Virtual environments remain an option for development, not a runtime
+requirement. After installing the GUI's distro dependencies if needed:
+
+```sh
+/usr/bin/python3 -m venv --system-site-packages .venv
 . .venv/bin/activate
 pip install -e .
-tasciio
 ```
 
-The engine, converters, and terminal interface do not require GTK.
-On Debian/Ubuntu, install the GUI's system dependencies and expose them to the
-virtual environment:
-
-```sh
-sudo apt-get install python3-venv python3-gi python3-gi-cairo python3-cairo \
-  gir1.2-gtk-3.0 gir1.2-pango-1.0
-/usr/bin/python3 -m venv --system-site-packages .venv-gtk
-. .venv-gtk/bin/activate
-pip install -e .
-asciio
-```
-
-Alternatively, install the appropriate GTK3, Cairo, GObject-introspection and
-development packages for your platform, then `pip install -e '.[gui]'`.
-The terminal UI requires a platform with Python's `curses` module.
+Alternatively, install your platform's GTK3/Cairo/introspection development
+libraries, then `pip install -e '.[gui]'` inside a virtual environment. Do not
+use `sudo pip install` or bypass an externally managed system Python.
 
 ## Use
 
@@ -208,6 +297,8 @@ Perl file/stencil/script compatibility and JSON export are intentionally exclude
 ## Development
 
 ```sh
+python3 -m venv --system-site-packages .venv
+. .venv/bin/activate
 pip install -e '.[dev]'
 ruff check .
 mypy
