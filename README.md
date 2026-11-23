@@ -109,7 +109,8 @@ Package-name references: [PyGObject's distro installation guide](https://pygobje
 [Debian wcwidth](https://packages.debian.org/trixie/python3-wcwidth),
 [Fedora regex](https://packages.fedoraproject.org/pkgs/python-regex/python3-regex/),
 and [Arch Python packages](https://archlinux.org/packages/extra/x86_64/python-regex/).
-Ubuntu 24.04 distro versions are also exercised by the native-package CI job.
+The native-package CI jobs are configured to exercise these distro installs,
+including Ubuntu 24.04's older dependency versions.
 
 ### Optional pip/development installation
 
