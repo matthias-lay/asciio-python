@@ -1,0 +1,268 @@
+{
+  "format": "asciio-python",
+  "version": 1,
+  "elements": [
+    {
+      "kind": "box",
+      "x": 2,
+      "y": 2,
+      "text": "Web UI",
+      "title": "Browser",
+      "width": 11,
+      "height": 5,
+      "style": "unicode",
+      "id": "6baa9a45aa2d46a5a0fc470cb9bf47d6",
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          8,
+          0
+        ]
+      ],
+      "vertical_first": false,
+      "diagonal": false,
+      "start_head": false,
+      "end_head": true,
+      "transparent": false,
+      "fill": " ",
+      "foreground": "#202020",
+      "background": "#ffffff",
+      "group": null,
+      "command": []
+    },
+    {
+      "kind": "box",
+      "x": 28,
+      "y": 2,
+      "text": "Python service",
+      "title": "API",
+      "width": 18,
+      "height": 5,
+      "style": "unicode",
+      "id": "b30b6ae688ed4594ba19ee6acba76267",
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          8,
+          0
+        ]
+      ],
+      "vertical_first": false,
+      "diagonal": false,
+      "start_head": false,
+      "end_head": true,
+      "transparent": false,
+      "fill": " ",
+      "foreground": "#202020",
+      "background": "#ffffff",
+      "group": null,
+      "command": []
+    },
+    {
+      "kind": "ellipse",
+      "x": 62,
+      "y": 1,
+      "text": "Database",
+      "title": "",
+      "width": 16,
+      "height": 5,
+      "style": "dash",
+      "id": "2f4b73f410264ef58fc95966fcc483a0",
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          8,
+          0
+        ]
+      ],
+      "vertical_first": false,
+      "diagonal": false,
+      "start_head": false,
+      "end_head": true,
+      "transparent": false,
+      "fill": " ",
+      "foreground": "#202020",
+      "background": "#ffffff",
+      "group": null,
+      "command": []
+    },
+    {
+      "kind": "box",
+      "x": 28,
+      "y": 13,
+      "text": "Background jobs",
+      "title": "Worker",
+      "width": 19,
+      "height": 5,
+      "style": "unicode",
+      "id": "464b6fe5baff425091eaf8f7177bef4a",
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          8,
+          0
+        ]
+      ],
+      "vertical_first": false,
+      "diagonal": false,
+      "start_head": false,
+      "end_head": true,
+      "transparent": false,
+      "fill": " ",
+      "foreground": "#202020",
+      "background": "#ffffff",
+      "group": null,
+      "command": []
+    },
+    {
+      "kind": "arrow",
+      "x": 2,
+      "y": 2,
+      "text": "",
+      "title": "",
+      "width": 0,
+      "height": 0,
+      "style": "dash",
+      "id": "0240f2f5e20b4c2392d8b408e4def942",
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          8,
+          0
+        ]
+      ],
+      "vertical_first": false,
+      "diagonal": false,
+      "start_head": false,
+      "end_head": true,
+      "transparent": false,
+      "fill": " ",
+      "foreground": "#202020",
+      "background": "#ffffff",
+      "group": null,
+      "command": []
+    },
+    {
+      "kind": "arrow",
+      "x": 28,
+      "y": 2,
+      "text": "",
+      "title": "",
+      "width": 0,
+      "height": 0,
+      "style": "dash",
+      "id": "0d31ec3f2b4d4eb3a1cfc7d1fd12a23f",
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          8,
+          0
+        ]
+      ],
+      "vertical_first": false,
+      "diagonal": false,
+      "start_head": false,
+      "end_head": true,
+      "transparent": false,
+      "fill": " ",
+      "foreground": "#202020",
+      "background": "#ffffff",
+      "group": null,
+      "command": []
+    },
+    {
+      "kind": "arrow",
+      "x": 28,
+      "y": 2,
+      "text": "",
+      "title": "",
+      "width": 0,
+      "height": 0,
+      "style": "dash",
+      "id": "9a48abe90dd54a0680afb4fbcf80a47b",
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          8,
+          0
+        ]
+      ],
+      "vertical_first": false,
+      "diagonal": false,
+      "start_head": false,
+      "end_head": true,
+      "transparent": false,
+      "fill": " ",
+      "foreground": "#202020",
+      "background": "#ffffff",
+      "group": null,
+      "command": []
+    }
+  ],
+  "connections": [
+    {
+      "arrow": "0240f2f5e20b4c2392d8b408e4def942",
+      "endpoint": "start",
+      "target": "6baa9a45aa2d46a5a0fc470cb9bf47d6",
+      "anchor": "right",
+      "offset": 0
+    },
+    {
+      "arrow": "0240f2f5e20b4c2392d8b408e4def942",
+      "endpoint": "end",
+      "target": "b30b6ae688ed4594ba19ee6acba76267",
+      "anchor": "left",
+      "offset": 0
+    },
+    {
+      "arrow": "0d31ec3f2b4d4eb3a1cfc7d1fd12a23f",
+      "endpoint": "start",
+      "target": "b30b6ae688ed4594ba19ee6acba76267",
+      "anchor": "right",
+      "offset": 0
+    },
+    {
+      "arrow": "0d31ec3f2b4d4eb3a1cfc7d1fd12a23f",
+      "endpoint": "end",
+      "target": "2f4b73f410264ef58fc95966fcc483a0",
+      "anchor": "left",
+      "offset": 0
+    },
+    {
+      "arrow": "9a48abe90dd54a0680afb4fbcf80a47b",
+      "endpoint": "start",
+      "target": "b30b6ae688ed4594ba19ee6acba76267",
+      "anchor": "bottom",
+      "offset": 0
+    },
+    {
+      "arrow": "9a48abe90dd54a0680afb4fbcf80a47b",
+      "endpoint": "end",
+      "target": "464b6fe5baff425091eaf8f7177bef4a",
+      "anchor": "top",
+      "offset": 0
+    }
+  ],
+  "cross_mode": true
+}
