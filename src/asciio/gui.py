@@ -19,7 +19,7 @@ from gi.repository import Gdk, Gtk, Pango, PangoCairo  # noqa: E402
 from . import storage  # noqa: E402
 from .bindings import Bindings, special_action  # noqa: E402
 from .editor import Editor  # noqa: E402
-from .model import KINDS, STYLES, Element  # noqa: E402
+from .model import ANCHORS, ARROWS, KINDS, STYLES, Element, route  # noqa: E402
 from .text import CONTINUATION, width  # noqa: E402
 
 
@@ -58,7 +58,13 @@ class Canvas(Gtk.DrawingArea):
         self.origin = (0, 0)
         self.drag_start: tuple[int, int] | None = None
         self.drag_end: tuple[int, int] | None = None
-        self.drag_move = False
+        self.drag_kind = ""
+        self.drag_element: str | None = None
+        self.drag_handle = ""
+        self.set_tooltip_text(
+            "Select an element: drag blue squares to resize, green circles to connect. "
+            "Drag an arrow endpoint to reconnect or detach it. Escape cancels a drag."
+        )
         self.set_can_focus(True)
         self.add_events(
             Gdk.EventMask.BUTTON_PRESS_MASK
@@ -80,7 +86,8 @@ class Canvas(Gtk.DrawingArea):
         layout.set_font_description(Pango.FontDescription(f"DejaVu Sans Mono {self.zoom}"))
         self.cell_width, self.cell_height = layout.get_pixel_size()
         left, top, right, bottom = self.editor.diagram.bounds()
-        self.origin = (min(-2, left - 2), min(-2, top - 2))
+        if self.drag_start is None:
+            self.origin = (min(-2, left - 2), min(-2, top - 2))
         self.set_size_request(
             max(1000, (right - self.origin[0] + 30) * self.cell_width),
             max(700, (bottom - self.origin[1] + 20) * self.cell_height),
@@ -92,6 +99,105 @@ class Canvas(Gtk.DrawingArea):
             math.floor(event.x / self.cell_width) + self.origin[0],
             math.floor(event.y / self.cell_height) + self.origin[1],
         )
+
+    def resize_handles(self, element: Element) -> dict[str, tuple[int, int]]:
+        x, y, w, h = element.x, element.y, element.width, element.height
+        return {
+            "nw": (x, y),
+            "n": (x + w // 2, y),
+            "ne": (x + w - 1, y),
+            "w": (x, y + h // 2),
+            "e": (x + w - 1, y + h // 2),
+            "sw": (x, y + h - 1),
+            "s": (x + w // 2, y + h - 1),
+            "se": (x + w - 1, y + h - 1),
+        }
+
+    def handle_at(self, point: tuple[int, int]) -> tuple[str, str, str] | None:
+        for element in reversed(self.editor.selected):
+            if element.kind in ARROWS:
+                points = self.editor.diagram.points(element)
+                for endpoint, location in (("start", points[0]), ("end", points[-1])):
+                    if point == location:
+                        return "endpoint", element.id, endpoint
+            else:
+                for side in ANCHORS:
+                    if point == element.anchor(side):
+                        return "connect", element.id, side
+                for handle, location in self.resize_handles(element).items():
+                    if point == location:
+                        return "resize", element.id, handle
+        return None
+
+    def connection_target(self, point: tuple[int, int]) -> tuple[Element, str] | None:
+        candidates = [
+            e
+            for e in reversed(self.editor.diagram.elements)
+            if e.kind not in ARROWS
+            and not (self.drag_kind == "connect" and e.id == self.drag_element)
+        ]
+        hit = self.editor.diagram.hit(*point)
+        if hit is not None and hit.kind not in ARROWS:
+            candidates = [e for e in candidates if e.id == hit.id]
+        for element in candidates:
+            side = min(
+                ANCHORS,
+                key=lambda a: (
+                    abs(point[0] - element.anchor(a)[0]) + abs(point[1] - element.anchor(a)[1])
+                ),
+            )
+            anchor = element.anchor(side)
+            if hit is element or max(abs(point[0] - anchor[0]), abs(point[1] - anchor[1])) <= 1:
+                return element, side
+        return None
+
+    def cancel_drag(self) -> None:
+        self.drag_start = self.drag_end = None
+        self.drag_kind = ""
+        self.drag_element = None
+        self.drag_handle = ""
+
+    def draw_handles(self, context) -> None:
+        cw, ch = self.cell_width, self.cell_height
+        ox, oy = self.origin
+        selected = self.editor.selected
+        connecting = self.drag_kind in ("connect", "endpoint")
+        for element in self.editor.diagram.elements:
+            if element.kind not in ARROWS and (element in selected or connecting):
+                for side in ANCHORS:
+                    x, y = element.anchor(side)
+                    color(context, "#16824b")
+                    context.arc(
+                        (x - ox + 0.5) * cw, (y - oy + 0.5) * ch, min(cw, ch) * 0.35, 0, math.tau
+                    )
+                    context.fill()
+        for element in selected:
+            points = self.editor.diagram.points(element) if element.kind in ARROWS else []
+            locations = [points[0], points[-1]] if points else self.resize_handles(element).values()
+            for x, y in locations:
+                color(context, "#2674c9")
+                context.rectangle((x - ox + 0.15) * cw, (y - oy + 0.25) * ch, cw * 0.7, ch * 0.5)
+                context.fill()
+        if connecting and self.drag_end is not None and self.drag_element is not None:
+            target = self.connection_target(self.drag_end)
+            point = target[0].anchor(target[1]) if target else self.drag_end
+            element = self.editor.diagram.get(self.drag_element)
+            if self.drag_kind == "connect":
+                points = [element.anchor(self.drag_handle), point]
+            else:
+                points = self.editor.diagram.points(element)
+                points[0 if self.drag_handle == "start" else -1] = point
+            path = route(
+                points, element.vertical_first, element.diagonal or element.kind == "angled-arrow"
+            )
+            color(context, "#16824b")
+            context.set_line_width(2)
+            for i, (x, y) in enumerate(path):
+                if i == 0:
+                    context.move_to((x - ox + 0.5) * cw, (y - oy + 0.5) * ch)
+                else:
+                    context.line_to((x - ox + 0.5) * cw, (y - oy + 0.5) * ch)
+            context.stroke()
 
     def draw(self, widget, context) -> bool:
         context.set_source_rgb(0.98, 0.98, 0.98)
@@ -132,17 +238,38 @@ class Canvas(Gtk.DrawingArea):
                 (left - ox) * cw, (top - oy) * ch, (right - left) * cw, (bottom - top) * ch
             )
             context.fill()
-        if self.drag_start is not None and self.drag_end is not None:
+        if (
+            self.drag_start is not None
+            and self.drag_end is not None
+            and self.drag_kind
+            in (
+                "move",
+                "select",
+                "resize",
+            )
+        ):
             a, b = self.drag_start, self.drag_end
             color(context, "#2674c9", 0.8)
             context.set_line_width(1)
+            left, top = min(a[0], b[0]), min(a[1], b[1])
+            right, bottom = max(a[0], b[0]) + 1, max(a[1], b[1]) + 1
+            if self.drag_kind == "resize" and self.drag_element is not None:
+                preview = Element(**asdict(self.editor.diagram.get(self.drag_element)))
+                preview.resize(self.drag_handle, b[0] - a[0], b[1] - a[1])
+                left, top = preview.x, preview.y
+                right, bottom = left + preview.width, top + preview.height
+            elif self.drag_kind == "move" and self.editor.selection:
+                left, top, right, bottom = self.editor.diagram.bounds(self.editor.selection)
+                left, right = left + b[0] - a[0], right + b[0] - a[0]
+                top, bottom = top + b[1] - a[1], bottom + b[1] - a[1]
             context.rectangle(
-                (min(a[0], b[0]) - ox) * cw,
-                (min(a[1], b[1]) - oy) * ch,
-                (abs(a[0] - b[0]) + 1) * cw,
-                (abs(a[1] - b[1]) + 1) * ch,
+                (left - ox) * cw,
+                (top - oy) * ch,
+                (right - left) * cw,
+                (bottom - top) * ch,
             )
             context.stroke()
+        self.draw_handles(context)
         cx, cy = self.editor.cursor
         color(context, "#d25128")
         context.rectangle((cx - ox) * cw, (cy - oy) * ch, cw, ch)
@@ -164,20 +291,29 @@ class Canvas(Gtk.DrawingArea):
             return True
         if event.button != 1:
             return False
+        self.cancel_drag()
         hit = self.editor.diagram.hit(*point)
         toggle = bool(event.state & Gdk.ModifierType.CONTROL_MASK)
+        if event.type == Gdk.EventType.DOUBLE_BUTTON_PRESS:
+            if hit is not None:
+                self.editor.select({hit.id})
+                self.window.perform("@edit")
+            else:
+                self.window.perform("@box")
+            return True
+        handle = None if toggle else self.handle_at(point)
+        if handle is not None:
+            self.drag_kind, self.drag_element, self.drag_handle = handle
+            self.drag_start = self.drag_end = point
+            self.window.refresh()
+            return True
         if hit is None:
             if not toggle:
                 self.editor.select(set())
         elif hit.id not in self.editor.selection or toggle:
             self.editor.select({hit.id}, toggle=toggle)
         self.drag_start = point
-        self.drag_move = hit is not None
-        if event.type == Gdk.EventType.DOUBLE_BUTTON_PRESS:
-            if hit is not None:
-                self.window.perform("@edit")
-            else:
-                self.window.perform("@box")
+        self.drag_kind = "move" if hit is not None else "select"
         self.window.refresh()
         return True
 
@@ -185,29 +321,67 @@ class Canvas(Gtk.DrawingArea):
         if self.drag_start is not None:
             self.drag_end = self.point(event)
             self.queue_draw()
+        else:
+            handle = self.handle_at(self.point(event))
+            name = "default"
+            if handle is not None:
+                name = f"{handle[2]}-resize" if handle[0] == "resize" else "crosshair"
+            window = self.get_window()
+            if window is not None:
+                window.set_cursor(Gdk.Cursor.new_from_name(self.get_display(), name))
         return True
 
     def release(self, widget, event) -> bool:
         if event.button != 1 or self.drag_start is None:
             return False
         a, b = self.drag_start, self.point(event)
-        if a != b:
-            if self.drag_move:
-                self.editor.move(b[0] - a[0], b[1] - a[1])
-            else:
-                left, right = sorted((a[0], b[0]))
-                top, bottom = sorted((a[1], b[1]))
-                ids = set()
-                for element in self.editor.diagram.elements:
-                    x1, y1, x2, y2 = self.editor.diagram.bounds({element.id})
-                    if x1 >= left and y1 >= top and x2 <= right + 1 and y2 <= bottom + 1:
-                        ids.add(element.id)
-                self.editor.select(ids)
-        self.drag_start = self.drag_end = None
+        try:
+            if a != b:
+                if self.drag_kind == "move":
+                    self.editor.move(b[0] - a[0], b[1] - a[1])
+                elif self.drag_kind == "resize" and self.drag_element is not None:
+                    self.editor.resize_element(
+                        self.drag_element,
+                        self.drag_handle,
+                        b[0] - a[0],
+                        b[1] - a[1],
+                    )
+                elif self.drag_kind in ("connect", "endpoint") and self.drag_element is not None:
+                    target = self.connection_target(b)
+                    if self.drag_kind == "connect":
+                        if target is not None:
+                            source = self.editor.diagram.get(self.drag_element)
+                            self.editor.link(source, target[0], self.drag_handle, target[1])
+                    else:
+                        self.editor.set_endpoint(
+                            self.drag_element,
+                            self.drag_handle,
+                            b,
+                            target[0] if target else None,
+                            target[1] if target else None,
+                        )
+                else:
+                    left, right = sorted((a[0], b[0]))
+                    top, bottom = sorted((a[1], b[1]))
+                    ids = set()
+                    for element in self.editor.diagram.elements:
+                        x1, y1, x2, y2 = self.editor.diagram.bounds({element.id})
+                        if x1 >= left and y1 >= top and x2 <= right + 1 and y2 <= bottom + 1:
+                            ids.add(element.id)
+                    self.editor.select(ids)
+        except ValueError as error:
+            self.window.message("Mouse action failed", str(error), error=True)
+        finally:
+            self.cancel_drag()
         self.window.refresh()
         return True
 
     def key(self, widget, event) -> bool:
+        if self.drag_start is not None:
+            if Gdk.keyval_name(event.keyval) == "Escape":
+                self.cancel_drag()
+                self.window.refresh()
+            return True
         action = self.bindings.feed(gtk_key(event))
         if action is not None:
             self.window.perform(action)

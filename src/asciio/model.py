@@ -204,6 +204,22 @@ class Element:
         elif self.kind.startswith("triangle"):
             self.width = max(self.width, self.height * 2 - 1)
 
+    def resize(self, handle: str, dx: int, dy: int) -> None:
+        if handle not in ("n", "s", "e", "w", "nw", "ne", "sw", "se"):
+            raise ValueError(f"Unknown resize handle: {handle}")
+        if self.kind in ARROWS:
+            raise ValueError("Drag an arrow endpoint to resize an arrow")
+        right, bottom = self.x + self.width, self.y + self.height
+        if "w" in handle or "e" in handle:
+            self.width = max(0, self.width + (-dx if "w" in handle else dx))
+        if "n" in handle or "s" in handle:
+            self.height = max(0, self.height + (-dy if "n" in handle else dy))
+        self.fit()
+        if "w" in handle:
+            self.x = right - self.width
+        if "n" in handle:
+            self.y = bottom - self.height
+
     def anchor(self, side: str, offset: int = 0) -> Point:
         if side not in ANCHORS:
             raise ValueError(f"Unknown anchor: {side}")

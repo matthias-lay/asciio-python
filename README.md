@@ -157,6 +157,18 @@ insertion cursor, Ctrl-click for multi-selection, drag selected elements to move
 or drag empty canvas to select a rectangle. Double-click edits or adds a box.
 Ctrl+mouse-wheel zooms.
 
+Selected shapes show **blue resize squares** at their corners and edges. Drag
+one to resize that shape; text limits the minimum size. The outline previews
+the new bounds before release. Other selected/grouped shapes are not resized.
+
+Selected shapes also show **green connector circles** just outside each side.
+Drag a green circle to another shape's circle or border to create a bound
+arrow. The target's nearest side is chosen automatically; a green line previews
+the connection. Select an existing arrow and drag either blue endpoint to a
+shape to connect/reconnect it, or onto empty canvas to detach that end only.
+Bound endpoints follow subsequent moves and resizes. Each completed drag is
+one undoable action; `Escape` cancels without changing the diagram.
+
 | Keys | Action |
 | --- | --- |
 | `b`, `t`, `a a` | Insert box, text, arrow at cursor |
@@ -287,8 +299,8 @@ alignment/distribution, search/replace, transactional undo/redo, native
 persistence, text/SVG/PNG output, scripting, GUI tabs and configurable keys.
 
 Remaining for full feature parity: upstream's exact ellipse/angled-arrow
-rasterization and full per-shape style catalog; automatic mouse connection
-snapping and obstacle routing; custom connector definitions and connection to
+rasterization and full per-shape style catalog; obstacle routing;
+custom connector definitions and connection to
 interior arrow sections; nested groups; image boxes; bundled computer/people
 stencil libraries; pen/eraser and inline editing modes; markup and SVG path
 conversion; presentation/animation; Git integration; embedded web API;

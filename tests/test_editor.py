@@ -42,6 +42,27 @@ def test_moving_a_bound_arrow_detaches_without_jumping():
     assert editor.diagram.points(editor.diagram.get(arrow)) == [(x + 3, y - 2) for x, y in before]
 
 
+def test_resize_from_top_left_clamps_to_content_and_preserves_opposite_corner():
+    editor = Editor()
+    element = editor.add(text="minimum", width=25, height=10)
+    right, bottom = element.x + element.width, element.y + element.height
+    before = editor.diagram.to_dict()
+    editor.resize_element(element.id, "nw", 100, 100)
+    assert element.width == len("minimum") + 4
+    assert element.height == 3
+    assert (element.x + element.width, element.y + element.height) == (right, bottom)
+    editor.undo()
+    assert editor.diagram.to_dict() == before
+
+
+def test_invalid_endpoint_target_rolls_back_both_connections_and_geometry():
+    editor, _, _, arrow = linked()
+    before = editor.diagram.to_dict()
+    with pytest.raises(ValueError, match="non-arrow"):
+        editor.set_endpoint(arrow, "end", (100, 100), editor.diagram.get(arrow), "top")
+    assert editor.diagram.to_dict() == before
+
+
 def test_target_deletion_freezes_surviving_arrow_and_is_undoable():
     editor, a, _, arrow = linked()
     before = editor.diagram.points(editor.diagram.get(arrow))

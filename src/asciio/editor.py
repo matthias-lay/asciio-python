@@ -130,6 +130,40 @@ class Editor:
                     element.height = max(0, element.height + dh)
                     element.fit()
 
+    def resize_element(self, element_id: str, handle: str, dx: int, dy: int) -> None:
+        element = self.diagram.get(element_id)
+        with self.change():
+            element.resize(handle, dx, dy)
+
+    def set_endpoint(
+        self,
+        element_id: str,
+        endpoint: str,
+        point: Point,
+        target: Element | None = None,
+        anchor: str | None = None,
+    ) -> None:
+        element = self.diagram.get(element_id)
+        if element.kind not in ARROWS or endpoint not in ("start", "end"):
+            raise ValueError("Select an arrow start or end")
+        if (target is None) != (anchor is None):
+            raise ValueError("A connection requires both target and anchor")
+        with self.change():
+            element.points = [
+                (x - element.x, y - element.y) for x, y in self.diagram.points(element)
+            ]
+            element.points[0 if endpoint == "start" else -1] = (
+                point[0] - element.x,
+                point[1] - element.y,
+            )
+            self.diagram.connections = [
+                c
+                for c in self.diagram.connections
+                if (c.arrow, c.endpoint) != (element_id, endpoint)
+            ]
+            if target is not None and anchor is not None:
+                self.diagram.connect(element, endpoint, target, anchor)
+
     def set(self, name: str, value: Any) -> None:
         if name not in {f.name for f in fields(Element)} - {"id", "group"}:
             raise ValueError(f"Unknown or protected property: {name}")
